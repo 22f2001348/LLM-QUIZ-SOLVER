@@ -39,9 +39,9 @@ TOOLS = [
 # LLM INIT
 # -------------------------------------------------
 rate_limiter = InMemoryRateLimiter(
-    requests_per_second=4 / 60,
+    requests_per_second=3 / 60,
     check_every_n_seconds=1,
-    max_bucket_size=4
+    max_bucket_size=3
 )
 
 llm = init_chat_model(
@@ -112,20 +112,10 @@ def agent_node(state: AgentState):
         prev_time = float(prev_time)
         diff = cur_time - prev_time
 
-        if diff >= 180 or (offset != "0" and (cur_time - float(offset)) > 90):
-            print(f"Timeout exceeded ({diff}s) — instructing LLM to purposely submit wrong answer.")
-
-            fail_instruction = """
-            You have exceeded the time limit for this task (over 180 seconds).
-            Immediately call the `post_request` tool and submit a WRONG answer for the CURRENT quiz.
-            """
-
-            # Using HumanMessage (as you correctly implemented)
-            fail_msg = HumanMessage(content=fail_instruction)
-
-            # We invoke the LLM immediately with this new instruction
-            result = llm.invoke(state["messages"] + [fail_msg])
-            return {"messages": [result]}
+        # FIXED: Instead of submitting wrong answer, just END
+        if diff >= 175:
+            print(f"⏰ Timeout exceeded ({diff}s) — ENDING SESSION")
+            return {"messages": [HumanMessage(content="END")]}
     # --- TIME HANDLING END ---
 
     trimmed_messages = trim_messages(
@@ -142,13 +132,9 @@ def agent_node(state: AgentState):
     
     if not has_human:
         print("WARNING: Context was trimmed too far. Injecting state reminder.")
-        # We remind the agent of the current URL from the environment
         current_url = os.getenv("url", "Unknown URL")
         reminder = HumanMessage(content=f"Context cleared due to length. Continue processing URL: {current_url}")
-        
-        # We append this to the trimmed list (temporarily for this invoke)
         trimmed_messages.append(reminder)
-    # ----------------------------------------
 
     print(f"--- INVOKING AGENT (Context: {len(trimmed_messages)} items) ---")
     
@@ -195,12 +181,12 @@ graph = StateGraph(AgentState)
 # Add Nodes
 graph.add_node("agent", agent_node)
 graph.add_node("tools", ToolNode(TOOLS))
-graph.add_node("handle_malformed", handle_malformed_node) # Add the repair node
+graph.add_node("handle_malformed", handle_malformed_node)
 
 # Add Edges
 graph.add_edge(START, "agent")
 graph.add_edge("tools", "agent")
-graph.add_edge("handle_malformed", "agent") # Retry loop
+graph.add_edge("handle_malformed", "agent")
 
 # Conditional Edges
 graph.add_conditional_edges(
@@ -209,7 +195,7 @@ graph.add_conditional_edges(
     {
         "tools": "tools",
         "agent": "agent",
-        "handle_malformed": "handle_malformed", # Map the new route
+        "handle_malformed": "handle_malformed",
         END: END
     }
 )
@@ -221,7 +207,6 @@ app = graph.compile()
 # RUNNER
 # -------------------------------------------------
 def run_agent(url: str):
-    # system message is seeded ONCE here
     initial_messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": url}
