@@ -15,6 +15,11 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# Minimal env fallback so a single GEMINI_API_KEY works too
+import os as _os
+if not _os.getenv("GOOGLE_API_KEY") and _os.getenv("GEMINI_API_KEY"):
+    _os.environ["GOOGLE_API_KEY"] = _os.getenv("GEMINI_API_KEY")
+
 EMAIL = os.getenv("EMAIL")
 SECRET = os.getenv("SECRET")
 
@@ -89,7 +94,7 @@ def handle_malformed_node(state: AgentState):
     return {
         "messages": [
             {
-                "role": "user", 
+                "role": "user",
                 "content": "SYSTEM ERROR: Your last tool call was Malformed (Invalid JSON). Please rewrite the code and try again. Ensure you escape newlines and quotes correctly inside the JSON."
             }
         ]
@@ -103,9 +108,9 @@ def agent_node(state: AgentState):
     # --- TIME HANDLING START ---
     cur_time = time.time()
     cur_url = os.getenv("url")
-    
+
     # SAFE GET: Prevents crash if url is None or not in dict
-    prev_time = url_time.get(cur_url) 
+    prev_time = url_time.get(cur_url)
     offset = os.getenv("offset", "0")
 
     if prev_time is not None:
@@ -124,12 +129,12 @@ def agent_node(state: AgentState):
         strategy="last",
         include_system=True,
         start_on="human",
-        token_counter=llm, 
+        token_counter=llm,
     )
-    
+
     # Better check: Does it have a HumanMessage?
     has_human = any(msg.type == "human" for msg in trimmed_messages)
-    
+
     if not has_human:
         print("WARNING: Context was trimmed too far. Injecting state reminder.")
         current_url = os.getenv("url", "Unknown URL")
@@ -137,7 +142,7 @@ def agent_node(state: AgentState):
         trimmed_messages.append(reminder)
 
     print(f"--- INVOKING AGENT (Context: {len(trimmed_messages)} items) ---")
-    
+
     result = llm.invoke(trimmed_messages)
 
     return {"messages": [result]}
@@ -148,7 +153,7 @@ def agent_node(state: AgentState):
 # -------------------------------------------------
 def route(state):
     last = state["messages"][-1]
-    
+
     # 1. CHECK FOR MALFORMED FUNCTION CALLS
     if "finish_reason" in last.response_metadata:
         if last.response_metadata["finish_reason"] == "MALFORMED_FUNCTION_CALL":
@@ -190,7 +195,7 @@ graph.add_edge("handle_malformed", "agent")
 
 # Conditional Edges
 graph.add_conditional_edges(
-    "agent", 
+    "agent",
     route,
     {
         "tools": "tools",
