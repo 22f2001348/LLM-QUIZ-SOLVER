@@ -123,10 +123,10 @@ cd LLM-QUIZ-SOLVER
 Ensure you have uv installed, then sync the project:
 
 ```
-# Install uv if you haven't already  
+# Install uv if you haven't already
 pip install uv
 
-# Sync dependencies  
+# Sync dependencies
 uv sync
 uv run playwright install chromium
 ```
@@ -441,7 +441,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-**Author**: RAHBER KAZMI 
+**Author**: RAHBER KAZMI
 **Course**: Tools in Data Science (TDS)
 **Institution**: IIT Madras
 
