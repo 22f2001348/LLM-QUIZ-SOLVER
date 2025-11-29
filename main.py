@@ -17,12 +17,13 @@ SECRET = os.getenv("SECRET")
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or specific domains
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 START_TIME = time.time()
+
 @app.get("/healthz")
 def healthz():
     """Simple liveness check."""
