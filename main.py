@@ -11,7 +11,11 @@ import time
 
 load_dotenv()
 
-EMAIL = os.getenv("EMAIL") 
+# Accept either GEMINI_API_KEY or GOOGLE_API_KEY from environment (minimal fallback)
+if not os.getenv("GOOGLE_API_KEY") and os.getenv("GEMINI_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
+
+EMAIL = os.getenv("EMAIL")
 SECRET = os.getenv("SECRET")
 
 app = FastAPI()
@@ -32,6 +36,16 @@ def healthz():
         "uptime_seconds": int(time.time() - START_TIME)
     }
 
+
+@app.get("/")
+def root():
+    """Basic root endpoint to avoid 404 noise."""
+    return {
+        "status": "ok",
+        "uptime_seconds": int(time.time() - START_TIME),
+        "note": "LLM Quiz Solver - root endpoint"
+    }
+
 @app.post("/solve")
 async def solve(request: Request, background_tasks: BackgroundTasks):
     try:
@@ -44,11 +58,11 @@ async def solve(request: Request, background_tasks: BackgroundTasks):
     secret = data.get("secret")
     if not url or not secret:
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    
+
     if secret != SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
-    url_time.clear() 
-    BASE64_STORE.clear()  
+    url_time.clear()
+    BASE64_STORE.clear()
     print("Verified starting the task...")
     os.environ["url"] = url
     os.environ["offset"] = "0"
