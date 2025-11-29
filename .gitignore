@@ -10,3 +10,6 @@ wheels/
 .venv
 tests
 LLMFiles
+
+# Local dotenv file with secrets
+.env
