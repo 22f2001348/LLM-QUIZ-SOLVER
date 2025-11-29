@@ -189,33 +189,13 @@ python main.py
 
 The server will start on `http://0.0.0.0:7860`
 
-### Testing the Endpoint
+### 🧪 Testing The Endpoint with Sample Quiz URLs
 
 Send a POST request to test your setup:
 
-```bash
-curl -X POST http://localhost:7860/solve \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "your.email@example.com",
-    "secret": "your_secret_string",
-    "url": "https://tds-llm-analysis.s-anand.net/demo"
-  }'
-```
-
-Expected response:
-
-```json
-{
-  "status": "ok"
-}
-```
-
 The agent will run in the background and solve the quiz chain autonomously.
 
-### 🧪 Testing with Sample Quiz URLs
 
-Use these test URLs to validate your setup. Replace the URL in the curl command below with each test URL:
 
 ```bash
 # Test 1: Basic demo
